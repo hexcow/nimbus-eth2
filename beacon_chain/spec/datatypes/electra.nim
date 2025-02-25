@@ -283,6 +283,65 @@ type
     LightClientBootstrap |
     SomeLightClientUpdate
 
+  LightClientSyncData* = object
+    sync_aggregate*: SyncAggregate
+    sync_aggregate_branch*: array[8, Eth2Digest]
+
+  LightClientFinalityData* = object
+    finalized_beacon_root*: Eth2Digest
+    finality_branch*: FinalityBranch
+
+  LightClientBootstrapData* = object
+    execution*: ExecutionPayloadHeader
+    execution_branch*: ExecutionBranch
+    current_sync_committee_branch*: CurrentSyncCommitteeBranch
+
+  LightClientUpdateData* = object
+    execution*: ExecutionPayloadHeader
+    execution_branch*: ExecutionBranch
+    next_sync_committee_branch*: NextSyncCommitteeBranch
+    finalized_header*: LightClientHeader
+    finality_branch*: FinalityBranch
+
+  LightClientPeriodData* = object
+    # Update from the period immediately following after the requested period
+    next_period_update*: LightClientOptimisticUpdate
+
+    # Historical headers for all slots of the requested period corresponding to
+    # `next_period_update.attested_header.beacon.state_root`
+    beacon_headers*: array[SLOTS_PER_SYNC_COMMITTEE_PERIOD, BeaconBlockHeader]
+    historical_block_roots_branch*: array[8, Eth2Digest]
+
+    # Sync committee aggregate signatures corresponding to each slot's
+    # `beacon_headers[<slot>].state_root`
+    sync_data*: array[SLOTS_PER_SYNC_COMMITTEE_PERIOD, LightClientSyncData]
+
+    # Finality data for `first_slot_with_finality` and its previous slot,
+    # corresponding to `beacon_headers[<slot>].beacon.state_root`. If there is
+    # no finality within the period, the highest slot within the period is used
+    first_slot_with_finality*: Slot
+    finality_data*: LightClientFinalityData
+    previous_finality_data*: LightClientFinalityData
+
+    # Additional data for creating `LightClientBootstrap` objects
+    current_sync_committee*: SyncCommittee
+    bootstrap_data*:
+      array[EPOCHS_PER_SYNC_COMMITTEE_PERIOD, LightClientBootstrapData]
+
+    # Additional data for creating the best `LightClientUpdate` of the period.
+    # Default initialized if no `LightClientUpdate` can be constructed
+    update_data*: LightClientUpdateData
+
+  LightClientHistoricalHeader* = object
+    # Most recent available update
+    update*: LightClientOptimisticUpdate
+
+    # Header matching the requested beacon block corresponding to
+    # `update.attested_header.beacon.state_root`
+    header*: LightClientHeader
+    block_branch*: array[8, Eth2Digest]
+    block_summary_branch*: array[8, Eth2Digest]
+
   # https://github.com/ethereum/consensus-specs/blob/v1.4.0-beta.5/specs/altair/light-client/sync-protocol.md#lightclientstore
   LightClientStore* = object
     finalized_header*: LightClientHeader
