@@ -29,7 +29,7 @@ from stew/bitops2 import log2trunc
 from stew/byteutils import to0xHex
 from ./altair import
   EpochParticipationFlags, InactivityScores, SyncAggregate, SyncCommittee,
-  TrustedSyncAggregate, num_active_participants
+  TrustedSyncAggregate, num_active_participants, ParticipationFlags
 from ./bellatrix import BloomLogs, ExecutionAddress, Transaction
 from ./capella import
   ExecutionBranch, HistoricalSummary, SignedBLSToExecutionChange,
@@ -341,6 +341,157 @@ type
     header*: LightClientHeader
     block_branch*: array[8, Eth2Digest]
     block_summary_branch*: array[8, Eth2Digest]
+
+  ListSummary* = object
+    items_root*: Eth2Digest
+    num_items*: uint64
+
+  LightClientBeaconStateData* = object
+    # Versioning
+    genesis_time*: uint64
+    genesis_validators_root*: Eth2Digest
+    slot*: Slot
+    fork*: Fork
+
+    # History
+    latest_block_header*: BeaconBlockHeader
+      ## `latest_block_header.state_root == ZERO_HASH` temporarily
+
+    block_roots*: HashArray[Limit SLOTS_PER_HISTORICAL_ROOT, Eth2Digest]
+      ## Needed to process attestations, older to newer
+
+    state_roots*: HashArray[Limit SLOTS_PER_HISTORICAL_ROOT, Eth2Digest]
+    historical_roots*: ListSummary  # HashList[Eth2Digest, Limit HISTORICAL_ROOTS_LIMIT]
+      ## Frozen in Capella, replaced by historical_summaries
+
+    # Eth1
+    eth1_data*: Eth1Data
+    eth1_data_votes*:
+      HashList[Eth1Data, Limit(EPOCHS_PER_ETH1_VOTING_PERIOD * SLOTS_PER_EPOCH)]
+    eth1_deposit_index*: uint64
+
+    # Registry
+    validators*: ListSummary  # HashList[Validator, Limit VALIDATOR_REGISTRY_LIMIT]
+    balances*: ListSummary  # HashList[Gwei, Limit VALIDATOR_REGISTRY_LIMIT]
+
+    # Randomness
+    randao_mixes*: HashArray[Limit EPOCHS_PER_HISTORICAL_VECTOR, Eth2Digest]
+
+    # Slashings
+    slashings*: HashArray[Limit EPOCHS_PER_SLASHINGS_VECTOR, Gwei]
+      ## Per-epoch sums of slashed effective balances
+
+    # Participation
+    previous_epoch_participation*: ListSummary  # EpochParticipationFlags
+    current_epoch_participation*: ListSummary  # EpochParticipationFlags
+
+    # Finality
+    justification_bits*: JustificationBits
+      ## Bit set for every recent justified epoch
+
+    previous_justified_checkpoint*: Checkpoint
+    current_justified_checkpoint*: Checkpoint
+    finalized_checkpoint*: Checkpoint
+
+    # Inactivity
+    inactivity_scores*: ListSummary  # InactivityScores
+
+    # Light client sync committees
+    current_sync_committee*: SyncCommittee
+    next_sync_committee*: SyncCommittee
+
+    # Execution
+    latest_execution_payload_header*: ExecutionPayloadHeader
+      ## [Modified in Electra:EIP6110:EIP7002]
+
+    # Withdrawals
+    next_withdrawal_index*: WithdrawalIndex
+    next_withdrawal_validator_index*: uint64
+
+    # Deep history valid from Capella onwards
+    historical_summaries*:
+      ListSummary  # HashList[HistoricalSummary, Limit HISTORICAL_ROOTS_LIMIT]
+
+    deposit_requests_start_index*: uint64  # [New in Electra:EIP6110]
+    deposit_balance_to_consume*: Gwei  # [New in Electra:EIP7251]
+    exit_balance_to_consume*: Gwei  # [New in Electra:EIP7251]
+    earliest_exit_epoch*: Epoch  # [New in Electra:EIP7251]
+    consolidation_balance_to_consume*: Gwei  # [New in Electra:EIP7251]
+    earliest_consolidation_epoch*: Epoch  # [New in Electra:EIP7251]
+
+    pending_deposits*: ListSummary  # HashList[PendingDeposit, Limit PENDING_DEPOSITS_LIMIT]
+      ## [New in Electra:EIP7251]
+
+    # [New in Electra:EIP7251]
+    pending_partial_withdrawals*:
+      ListSummary  # HashList[PendingPartialWithdrawal, Limit PENDING_PARTIAL_WITHDRAWALS_LIMIT]
+    pending_consolidations*:
+      ListSummary  # HashList[PendingConsolidation, Limit PENDING_CONSOLIDATIONS_LIMIT]
+      ## [New in Electra:EIP7251]
+
+  # LightClientBeaconStateElement* {.pure.} = enum
+  #   SUMMARY,
+  #   HISTORICAL_ROOTS,
+  #   VALIDATORS,
+  #   BALANCES,
+  #   PREVIOUS_EPOCH_PARTICIPATION,
+  #   CURRENT_EPOCH_PARTICIPATION,
+  #   INACTIVITY_SCORES,
+  #   HISTORICAL_SUMMARIES,
+  #   PENDING_DEPOSITS,
+  #   PENDING_PARTIAL_WITHDRAWALS,
+  #   PENDING_CONSOLIDATIONS
+
+  LightClientBeaconStateElement* = uint8
+
+  LightClientBeaconStateIdentifier* = object
+    period*: SyncCommitteePeriod
+    element*: LightClientBeaconStateElement
+    start_offset*: uint64
+    count*: uint64
+
+  LightClientBeaconStateSummary* = object
+    summary*: LightClientBeaconStateData
+
+  LightClientBeaconStatePartialHistoricalRoots* = object
+    offset*: uint64
+    partial_historical_roots*: List[Eth2Digest, Limit 1 shl 16]
+    branch*: array[8, Eth2Digest]
+
+  LightClientBeaconStatePartialValidators* = object
+    offset*: uint64
+    partial_validators*: List[Validator, Limit 1 shl 16]
+    branch*: array[24, Eth2Digest]
+
+  LightClientBeaconStatePartialEpochParticipation* = object
+    offset*: uint64
+    partial_epoch_participation*: List[ParticipationFlags, Limit 1 shl 16]
+    branch*: array[24, Eth2Digest]
+
+  LightClientBeaconStatePartialInactivityScores* = object
+    offset*: uint64
+    partial_inactivity_scores*: List[InactivityScores.T, Limit 1 shl 16]
+    branch*: array[24, Eth2Digest]
+
+  LightClientBeaconStatePartialHistoricalSummaries* = object
+    offset*: uint64
+    partial_historical_summaries*: List[HistoricalSummary, Limit 1 shl 16]
+    branch*: array[8, Eth2Digest]
+
+  LightClientBeaconStatePartialPendingDeposits* = object
+    offset*: uint64
+    partial_pending_deposits*: List[PendingDeposit, Limit 1 shl 8]
+    branch*: array[19, Eth2Digest]
+
+  LightClientBeaconStatePartialPendingPartialWithdrawals* = object
+    offset*: uint64
+    partial_pending_partial_withdrawals*: List[PendingPartialWithdrawal, Limit 1 shl 16]
+    branch*: array[11, Eth2Digest]
+
+  LightClientBeaconStatePartialPendingConsolidations* = object
+    offset*: uint64
+    partial_pending_consolidations*: List[PendingConsolidation, Limit 1 shl 16]
+    branch*: array[2, Eth2Digest]
 
   # https://github.com/ethereum/consensus-specs/blob/v1.4.0-beta.5/specs/altair/light-client/sync-protocol.md#lightclientstore
   LightClientStore* = object
