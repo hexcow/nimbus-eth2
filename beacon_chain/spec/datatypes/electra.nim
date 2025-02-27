@@ -316,10 +316,10 @@ type
     # `beacon_headers[<slot>].state_root`
     sync_data*: array[SLOTS_PER_SYNC_COMMITTEE_PERIOD, LightClientSyncData]
 
-    # Finality data for `first_slot_with_finality` and its previous slot,
+    # Finality data for `first_slot_with_period_finality` and its previous slot,
     # corresponding to `beacon_headers[<slot>].beacon.state_root`. If there is
     # no finality within the period, the highest slot within the period is used
-    first_slot_with_finality*: Slot
+    first_slot_with_period_finality*: Slot
     finality_data*: LightClientFinalityData
     previous_finality_data*: LightClientFinalityData
 
@@ -333,7 +333,7 @@ type
     update_data*: LightClientUpdateData
 
   LightClientHistoricalHeader* = object
-    # Most recent available update
+    # Recent available update
     update*: LightClientOptimisticUpdate
 
     # Header matching the requested beacon block corresponding to
@@ -342,11 +342,25 @@ type
     block_branch*: array[8, Eth2Digest]
     block_summary_branch*: array[8, Eth2Digest]
 
+  LightClientHistoricalStateRoot* = object
+    # Recent available update
+    update*: LightClientFinalityUpdate
+
+    # Post-state root at the start slot of the period immediately preceding the
+    # period of `update.finalized_header.beacon.slot`, corresponding to the
+    # fully completed `state_summary_root` after that period ended
+    state_root*: Eth2Digest
+    state_branch*: array[14, Eth2Digest]
+
+    # Inclusion proof of `state_summary_root` within historical data
+    # corresponding to `update.attested_header.beacon.state_root`
+    state_summary_branch*: array[8, Eth2Digest]
+
   ListSummary* = object
     items_root*: Eth2Digest
     num_items*: uint64
 
-  LightClientBeaconStateData* = object
+  LightClientBeaconStateSummary* = object
     # Versioning
     genesis_time*: uint64
     genesis_validators_root*: Eth2Digest
@@ -429,7 +443,7 @@ type
       ListSummary  # HashList[PendingConsolidation, Limit PENDING_CONSOLIDATIONS_LIMIT]
       ## [New in Electra:EIP7251]
 
-  # LightClientBeaconStateElement* {.pure.} = enum
+  # LightClientBeaconStateCategory* {.pure.} = enum
   #   SUMMARY,
   #   HISTORICAL_ROOTS,
   #   VALIDATORS,
@@ -442,16 +456,13 @@ type
   #   PENDING_PARTIAL_WITHDRAWALS,
   #   PENDING_CONSOLIDATIONS
 
-  LightClientBeaconStateElement* = uint8
+  LightClientBeaconStateCategory* = uint8
 
   LightClientBeaconStateIdentifier* = object
-    period*: SyncCommitteePeriod
-    element*: LightClientBeaconStateElement
+    state_root*: Eth2Digest
+    category*: LightClientBeaconStateCategory
     start_offset*: uint64
     count*: uint64
-
-  LightClientBeaconStateSummary* = object
-    summary*: LightClientBeaconStateData
 
   LightClientBeaconStatePartialHistoricalRoots* = object
     offset*: uint64
