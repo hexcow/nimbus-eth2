@@ -460,28 +460,33 @@ type
 
   LightClientBeaconStatePartialValidators* = object
     offset*: uint64
-    partial_validators*: List[Validator, Limit 1 shl 16]
-    branch*: array[24, Eth2Digest]
+    partial_validators*: List[Validator, Limit 1 shl 14]
+    branch*: array[26, Eth2Digest]
+
+  LightClientBeaconStatePartialBalances* = object
+    offset*: uint64
+    partial_balances*: List[Gwei, Limit 1 shl 18]
+    branch*: array[22, Eth2Digest]
 
   LightClientBeaconStatePartialEpochParticipation* = object
     offset*: uint64
-    partial_epoch_participation*: List[ParticipationFlags, Limit 1 shl 16]
-    branch*: array[24, Eth2Digest]
+    partial_epoch_participation*: List[ParticipationFlags, Limit 1 shl 21]
+    branch*: array[19, Eth2Digest]
 
   LightClientBeaconStatePartialInactivityScores* = object
     offset*: uint64
-    partial_inactivity_scores*: List[InactivityScores.T, Limit 1 shl 16]
-    branch*: array[24, Eth2Digest]
+    partial_inactivity_scores*: List[InactivityScores.T, Limit 1 shl 18]
+    branch*: array[22, Eth2Digest]
 
   LightClientBeaconStatePartialHistoricalSummaries* = object
     offset*: uint64
-    partial_historical_summaries*: List[HistoricalSummary, Limit 1 shl 16]
-    branch*: array[8, Eth2Digest]
+    partial_historical_summaries*: List[HistoricalSummary, Limit 1 shl 15]
+    branch*: array[9, Eth2Digest]
 
   LightClientBeaconStatePartialPendingDeposits* = object
     offset*: uint64
-    partial_pending_deposits*: List[PendingDeposit, Limit 1 shl 8]
-    branch*: array[19, Eth2Digest]
+    partial_pending_deposits*: List[PendingDeposit, Limit 1 shl 13]
+    branch*: array[14, Eth2Digest]
 
   LightClientBeaconStatePartialPendingPartialWithdrawals* = object
     offset*: uint64
@@ -490,8 +495,8 @@ type
 
   LightClientBeaconStatePartialPendingConsolidations* = object
     offset*: uint64
-    partial_pending_consolidations*: List[PendingConsolidation, Limit 1 shl 16]
-    branch*: array[2, Eth2Digest]
+    partial_pending_consolidations*: List[PendingConsolidation, Limit 1 shl 17]
+    branch*: array[1, Eth2Digest]
 
   # https://github.com/ethereum/consensus-specs/blob/v1.4.0-beta.5/specs/altair/light-client/sync-protocol.md#lightclientstore
   LightClientStore* = object

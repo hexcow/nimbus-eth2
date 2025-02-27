@@ -22,6 +22,13 @@ echo $(0x010000 * Validator.maxSize.float / 1024.0 / 1024.0)
 echo $(VALIDATOR_REGISTRY_LIMIT.float / 0x010000.float)  # 2^24 chunks of 2^16 vals
 
 echo ""
+echo "balances"
+echo $(LightClientBeaconStatePartialBalances.maxSize.float / 1024.0 / 1024.0)
+echo $(0x100000 * Gwei.maxSize.float / 1024.0 / 1024.0)
+echo $(VALIDATOR_REGISTRY_LIMIT.float / 0x100000.float)  # 2^20 chunks of 2^20 balances
+
+
+echo ""
 echo "epoch participation flags"
 echo $(LightClientBeaconStatePartialEpochParticipation.maxSize.float / 1024.0 / 1024.0)
 echo $(0x800000 * ParticipationFlags.maxSize.float / 1024.0 / 1024.0)
